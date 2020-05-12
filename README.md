@@ -4,7 +4,7 @@ InMemoryCache
 ## Build
 
 ```bash
-    go build imc_test
+    go build imc.go
 ```
 
 ## Test
