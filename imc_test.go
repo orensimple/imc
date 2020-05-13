@@ -1,9 +1,9 @@
 package imc //nolint:testpackage
 
 import (
-	"math/rand"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -42,17 +42,21 @@ func TestGetOrSet(t *testing.T) {
 }
 
 func TestGetOrSetMultithreading(t *testing.T) {
+	var count int32
+
 	testCache := NewInMemoryCache()
 	wg := &sync.WaitGroup{}
 
 	for i := 0; i < 1_000_000; i++ {
 		wg.Add(1)
 
-		go func() {
+		go func(i int, count *int32) {
 			defer wg.Done()
-			testCache.GetOrSet(strconv.Itoa(rand.Intn(1_000)), func() Value { return strconv.Itoa(rand.Intn(1_000)) })
-		}()
+			testCache.GetOrSet(strconv.Itoa(i%1000), func() Value { atomic.AddInt32(count, 1); return strconv.Itoa(i) })
+		}(i, &count)
 	}
 
 	wg.Wait()
+	require.Equal(t, int32(1000), count)
+	require.Equal(t, 1000, len(testCache.data))
 }

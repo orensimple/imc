@@ -42,6 +42,12 @@ func (cache *InMemoryCache) GetOrSet(key Key, valueFn func() Value) Value {
 
 	cache.dataMutex.Lock()
 	defer cache.dataMutex.Unlock()
+
+	value, found = cache.data[key]
+	if found {
+		return value
+	}
+
 	cache.data[key] = valueFn()
 
 	return cache.data[key]
