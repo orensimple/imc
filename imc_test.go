@@ -40,6 +40,7 @@ func TestGetOrSet(t *testing.T) {
 		require.Equal(t, 4, len(testCache.data))
 	})
 }
+
 func TestGetOrSetMultithreading(t *testing.T) {
 	testCache := NewInMemoryCache()
 	wg := &sync.WaitGroup{}
