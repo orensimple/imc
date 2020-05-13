@@ -1,6 +1,7 @@
 package imc //nolint:testpackage
 
 import (
+	"math/rand"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -42,21 +43,48 @@ func TestGetOrSet(t *testing.T) {
 }
 
 func TestGetOrSetMultithreading(t *testing.T) {
-	var count int32
+	var (
+		count     int32
+		sMap      sync.Map
+		dataMutex sync.Mutex
+	)
 
-	testCache := NewInMemoryCache()
 	wg := &sync.WaitGroup{}
 
-	for i := 0; i < 1_000_000; i++ {
-		wg.Add(1)
+	t.Run("load", func(t *testing.T) {
+		testCache := NewInMemoryCache()
+		for i := 0; i < 1_000_000; i++ {
+			wg.Add(1)
 
-		go func(i int, count *int32) {
-			defer wg.Done()
-			testCache.GetOrSet(strconv.Itoa(i%1000), func() Value { atomic.AddInt32(count, 1); return strconv.Itoa(i) })
-		}(i, &count)
-	}
+			go func(i int, count *int32) {
+				defer wg.Done()
+				testCache.GetOrSet(strconv.Itoa(i%1000), func() Value { atomic.AddInt32(count, 1); return strconv.Itoa(i) })
+			}(i, &count)
+		}
 
-	wg.Wait()
-	require.Equal(t, int32(1000), count)
-	require.Equal(t, 1000, len(testCache.data))
+		wg.Wait()
+		require.Equal(t, int32(1000), count)
+		require.Equal(t, 1000, len(testCache.data))
+	})
+
+	t.Run("value", func(t *testing.T) {
+		testCache := NewInMemoryCache()
+
+		for i := 0; i < 100_000; i++ {
+			wg.Add(1)
+
+			go func(sMap *sync.Map, dataMutex *sync.Mutex) {
+				defer wg.Done()
+				dataMutex.Lock()
+				key := strconv.Itoa(rand.Intn(100))
+				value := strconv.Itoa(rand.Intn(100))
+				imcValue := testCache.GetOrSet(key, func() Value { return value })
+				sMapValue, _ := sMap.LoadOrStore(key, value)
+				dataMutex.Unlock()
+				require.Equal(t, imcValue, sMapValue)
+			}(&sMap, &dataMutex)
+		}
+
+		wg.Wait()
+	})
 }
