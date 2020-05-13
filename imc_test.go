@@ -1,4 +1,4 @@
-package imc //nolint:golint,stylecheck
+package imc //nolint:testpackage
 
 import (
 	"math/rand"
@@ -44,15 +44,15 @@ func TestGetOrSet(t *testing.T) {
 func TestGetOrSetMultithreading(t *testing.T) {
 	testCache := NewInMemoryCache()
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
 
-	go func() {
-		defer wg.Done()
+	for i := 0; i < 1_000_000; i++ {
+		wg.Add(1)
 
-		for i := 0; i < 1_000_000; i++ {
-			go testCache.GetOrSet(strconv.Itoa(rand.Intn(1_000)), func() Value { return strconv.Itoa(rand.Intn(1_000)) })
-		}
-	}()
+		go func() {
+			defer wg.Done()
+			testCache.GetOrSet(strconv.Itoa(rand.Intn(1_000)), func() Value { return strconv.Itoa(rand.Intn(1_000)) })
+		}()
+	}
 
 	wg.Wait()
 }
