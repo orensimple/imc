@@ -1,4 +1,4 @@
-package imc
+package imc //nolint:golint,stylecheck
 
 import (
 	"math/rand"
