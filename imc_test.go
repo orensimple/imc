@@ -58,7 +58,16 @@ func TestGetOrSetMultithreading(t *testing.T) {
 
 			go func(i int, count *int32) {
 				defer wg.Done()
-				testCache.GetOrSet(strconv.Itoa(i%1000), func() Value { atomic.AddInt32(count, 1); return strconv.Itoa(i) })
+				testCache.GetOrSet(strconv.Itoa(rand.Intn(100)), func() Value { atomic.AddInt32(count, 1); return strconv.Itoa(i) })
+			}(i, &count)
+		}
+
+		for i := 0; i < 1_000; i++ {
+			wg.Add(1)
+
+			go func(i int, count *int32) {
+				defer wg.Done()
+				testCache.GetOrSet(strconv.Itoa(i), func() Value { atomic.AddInt32(count, 1); return strconv.Itoa(i) })
 			}(i, &count)
 		}
 
